@@ -12,9 +12,9 @@ class Professor(db.Document):
 class ResearchGroup(db.Document):
     name = db.StringField(max_length=20, required=True, unique=True)
     description = db.StringField()
-    founder = db.ReferenceField('Professor', required=True, reverse_delete_rule=db.CASCADE)
+    founder = db.ReferenceField('Professor', required=True, reverse_delete_rule=db.CASCADE,DBRef = False)
 
 class Student(db.Document):
     name = db.StringField(required=True)
     studentNumber = db.StringField(required=True)
-    researchGroups = db.ListField(db.ReferenceField(ResearchGroup))
+    researchGroups = db.ListField(db.ReferenceField('ResearchGroup'))

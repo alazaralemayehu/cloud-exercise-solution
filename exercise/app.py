@@ -21,6 +21,10 @@ db = initialize_db(app)
 def add_professor():
     print(request)
     body = request.get_json()
+    if (request.args.get('researchGroups')):
+        rg = (body['researchGroups'])
+        rg = [ObjectId(rg_id) for rg_id in rg]
+        body['researchGroups'] = rg
     professor = Professor(**body)
     professor.save()
     id = professor.id 
@@ -28,131 +32,156 @@ def add_professor():
     print(type((output)))
     return (output), 201
 
-@app.route('/listStudent', methods=['post']) 
-def add_student():
-    """
-    This function creates a new student given student_id in the request body
 
-    Returns:
-        dict: Dictionary containing the message and id
-        int : The status code
-    """
-    # Update the code here.      
+@app.route('/listProfessor/<prof_id>', methods=['get'])
+def get_professor_by_id(prof_id):
+    professor = (Professor.objects.get(id=prof_id))
+    output = {'name':professor.name, 'email':professor.email,'designation':professor.designation,'interests':professor.interests}
+
+    return jsonify(output), 200
+
+
+@app.route('/listProfessors', methods=['get'])
+def get_professor_by_property():
+    designation = request.args.get('designation')
+    if designation:
+        professors = Professor.objects(designation=designation)
+        output = [
+            {'name': professor.name, 'email': professor.email} for professor in professors
+        ]
+    else:
+        groupName = request.args.get('groupName')
+        research_group = ResearchGroup.objects.get(name=groupName)
+        print(research_group.name)
+
+        professors = Professor.objects(researchGroups=research_group)
+        output = [
+            {'name': professor.name, 'email': professor.email} for professor in professors
+        ]
+    return jsonify(output), 200
+
+@app.route('/listProfessor/<prof_id>', methods=['put'])
+def update_professor(prof_id):
+    professor = Professor.objects(id= prof_id)
     body = request.get_json()
+    try:
+        rg =  body["researchGroups"]
+        rg = [ObjectId(rg_id) for rg_id in rg]
+        print(rg)
 
-    body['researchGroups'] = ObjectId(body['researchGroups'])
-    student = Student(**body)
-    student.save()
-    id = student.id 
-    for v,i in body['founder']:
-        print(v)
-    output = {'message': "Student successfully created", 'id': str(id)}
-    return (output), 201
+        body['researchGroups'] = rg
+    except KeyError:
+        pass
+    finally:
+        professor.update(**body)
+        output = {'message': "Professor successfully updated", 'id': str(prof_id)}
+        return output, 200
+
+@app.route('/listProfessor/<prof_id>',methods=['delete'])
+def delete_professor(prof_id):
+    print(prof_id)
+    professor = Professor.objects(id=prof_id)
+    output = {'message': "Professor successfully deleted", 'id': str(prof_id)}
+    
+    professor.delete()
+    return output,200
 
 @app.route('/listGroup', methods=['post'])
 def add_research_group():
-    """
-    This function creates a new student given research_group_id in the request body
-
-    Returns:
-        dict: Dictionary containing the message and id
-        int : The status code
-    """
     body = request.get_json()
     body['founder'] = ObjectId(body['founder'])
 
     research_group = ResearchGroup(**(body))
     # research_group.founder = professor
     research_group.save()
-    output = {'message': "Group successfully created", 'group_id': str(research_group.id)}
+    output = {'message': "Group successfully created", 'id': str(research_group.id)}
     
     return jsonify(output), 201
 # 5f956a68ac53930c6b3dcc9b
 # Update the methods below
 
-@app.route('/listProfessor/<prof_id>', methods=['get'])
-def get_professor_by_id(prof_id):
-    professors = (Professor.objects.exclude('id').get(id=prof_id)).to_json()
-    return jsonify(professor), 200
-
-@app.route('/listProfessors', methods=['get'])
-def get_all_professors():
-    query_param = (request.args.get('designation'))
-    if (query_param is not None):
-        professors = Professor.objects(designation=query_param).exclude('id','interests','designation').to_json()
-        print(type(professors))
-        print (professors)
-
-        return professors, 200
-    # else:
-    #     query_param = (request.args.get('groupName'))
-    #     group = ResearchGroup.objects(name=query_param)
-    #     professors = Professor.objects(researchGroups.id=group.id)
-
-
-@app.route('/listStudent/<student_id>', methods=['get'])
-def get_student_by_id(student_id):
-    """
-    Get (read), update or delete a student
-
-    Args:
-        student_id (Object id): The student Id of the student record that nees to be modified.
-
-    Returns:
-        dict: The dictionary with output values
-        int : The status code
-    """
-    
-    if request.method == "Update here":
-        student = "Get the students from database here"
-        if student:
-            # Update Code here
-            
-            output = {'name': "", 'studentNumber': "", 'researchGroups': ""}
-        else:
-            # Update Code here
-            
-            output = {'message': ''}
-        status_code = 000
-        return output, status_code
-    elif request.method == "Update this line":
-        body = request.get_json()
-        keys = body.keys()
-        if body and keys:
-            # Update Code here
-            
-            output = {'message': '', 'id': ''}
-        else:
-            # Update Code here
-            
-            output = {'message': 'Message body empty'}
-        status_code = 000
-        return output, status_code
-    elif request.method == "update here":
-        # Update Code here
-
-        # Student.objects.get_or_404(id=student_id).delete()
-        output = {'message': '', 'id': ''}
-        status_code = 000
-        return output, status_code
-
-@app.route('/listProfessor/<prof_id>',methods=['delete'])
-def delete_professor(prof_id):
-    print(prof_id)
-    professor = Professor.objects.get(id=prof_id)
-    output = {'message': "Professor successfully deleted", 'id': str(prof_id)}
-    
-    professor.delete()
+@app.route('/listGroup/<group_id>',methods=['get'])
+def get_group_by_id(group_id):
+    print(group_id)
+    group = ResearchGroup.objects.get(id=group_id)
+    print(group)
+    output = {'id':group_id, 'name':group.name, 'founder':group.founder.id}
     return output,200
+
+@app.route('/listGroup/<group_id>', methods=['put'])
+def update_group(group_id):
+    group = ResearchGroup.objects(id=group_id)
+    body = request.get_json()
+    try:
+        
+        rg = body['founder']
+        print(body['founder'])
+        rg = ObjectId(rg) 
+        body['founder'] = rg
+    except KeyError:
+        pass
+    finally:
+        print(body)
+        output = {'message': "Group successfully updated", 'id': str(group_id)}
+        group.update(**body)
+        return output, 200
 
 @app.route('/listGroup/<group_id>',methods=['delete'])
 def delete_group(group_id):
-    print(12312)
     rg = ResearchGroup.objects.get(id=group_id)
-    print(rg)
-    output = {'message': "Group successfully deleted", 'id': str(group_id)}
     rg.delete()
+    output = {'message': "Group successfully deleted", 'id': str(group_id)}
     return output,200
+
+@app.route('/listStudent', methods=['post'])
+def add_student():
+
+    body = request.get_json()
+    if (request.args.get('researchGroups')):
+        rg = (body['researchGroups'])
+        rg = [ObjectId(rg_id) for rg_id in rg]
+        body['researchGroups'] = rg
+    student = Student(**body)
+    print(body)
+    # print(body['researchGroups'])
+    student.save()
+    id = student.id 
+    output = {'message': "Student successfully created", 'id': str(id)}
+    return (output), 201
+
+@app.route('/listStudent/<student_id>',methods=['get'])
+def get_student_by_id(student_id):
+    student = Student.objects.get(id=student_id)
+    body = {'name':student.name,'studentNumber':student.studentNumber,'researchGroups':student.researchGroups}
+    return jsonify(body),200
+
+@app.route('/listStudents', methods=['get'])
+def get_students_by_property():
+    groupName = request.args.get('groupName')
+    research_group = ResearchGroup.objects.get(name=groupName)
+    students = Student.objects(researchGroups=research_group)
+    output = [
+        {'name': student.name, 'studentNumber': student.studentNumber} for student in students
+    ]
+    return jsonify(output), 200
+
+@app.route('/listStudent/<student_id>', methods=['put'])
+def update_students(student_id):
+
+    body = request.get_json()
+    student = Student.objects(id=student_id)
+    try:
+        rg =  body["researchGroups"]
+        rg = [ObjectId(rg_id) for rg_id in rg]
+        print(rg)
+
+        body['researchGroups'] = rg
+    except KeyError:
+        pass
+    finally:
+        student.update(**body)
+        output = {'message': "Student successfully updated", 'id': str(student_id)}
+        return output, 200
 
 @app.route('/listStudent/<student_id>',methods=['delete'])
 def delete_student(student_id):
@@ -161,9 +190,4 @@ def delete_student(student_id):
     student.delete()
     return output,200
 
-
-# Complete the  request methods below
-
-
-# Only for local testing without docker
 app.run() # FLASK_APP=app.py FLASK_ENV=development flask run
