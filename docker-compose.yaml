@@ -1,0 +1,19 @@
+version: "3.8"
+services: 
+    backend:
+        build: .
+        container_name: flaskbackend
+        image: flaskbackend:v1
+        environment: 
+            FLASK_ENV: development
+        volumes:
+            - /home/booker/Desktop/cloud/exercise/:/user/app
+        ports: 
+        - "5000:5000"
+        depends_on: 
+        - mongo
+    mongo:
+        image: "mongo:4.2.0"
+        container_name: mongo
+        ports: 
+        - "1048:27017"
