@@ -11,8 +11,8 @@ app = Flask(__name__)
 # database configs
 app.config['MONGODB_SETTINGS'] = {
     # set the correct parameters here as required, some examples aer give below
-    'host':'mongodb://mongo:27017/flask-db'
-    # 'host':'mongodb://localhost/flask-db'
+    # 'host':'mongodb://mongo:27017/flask-db'
+    'host':'mongodb://localhost/flask-db'
 }
 db = initialize_db(app)
 
@@ -105,7 +105,7 @@ def get_group_by_id(group_id):
     print(group_id)
     group = ResearchGroup.objects.get(id=group_id)
     print(group)
-    output = {'id':group_id, 'name':group.name, 'founder':group.founder.id}
+    output = {'id':group_id, 'name':group.name, 'founder':str(group.founder.id)}
     return output,200
 
 @app.route('/listGroup/<group_id>', methods=['put'])
@@ -152,7 +152,9 @@ def add_student():
 @app.route('/listStudent/<student_id>',methods=['get'])
 def get_student_by_id(student_id):
     student = Student.objects.get(id=student_id)
-    body = {'name':student.name,'studentNumber':student.studentNumber,'researchGroups':student.researchGroups}
+    researchGroupList = [str(rg.id) for rg in student.researchGroups]
+    print(researchGroupList)
+    body = {'name':student.name,'studentNumber':student.studentNumber,'researchGroups':researchGroupList}#[str(student.researchGroups[0].id)]}
     return jsonify(body),200
 
 @app.route('/listStudents', methods=['get'])
